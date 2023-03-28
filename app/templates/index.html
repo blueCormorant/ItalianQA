@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container my-5">
+        <div class="col-lg-8 px-0">
+            <h1>Benvenuti!</h1>
+            <p class="fs-5">
+                You can use this webapp for extractive question answering. Just type or paste a passage of text into the context box and a question about the passage into the question box and hit submit.
+            </p>
+        </div>
+    </div>
+
+    <div class="container my-5">
+        <div class="col-lg-8 px-0">
+            <form action="" method="post" novalidate>
+                {{ form.hidden_tag() }}
+                <p>
+                    <div class="form-group">
+                        {{ form.context.label }}<br>
+                        {{ form.context(size=32) }}<br>
+                    </div>
+                    {% for error in form.context.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                    {% endfor %}
+                </p>
+                <p>
+                    {{ form.question.label }}<br>
+                    {{ form.question(size=32) }}<br>
+                    {% for error in form.question.errors %}
+                        <span style="color: red;">[{{ error }}]</span>
+                    {% endfor %}
+                </p>
+                {% if answer %}
+                    <p class="fs-5">
+                        {{ answer }}
+                    </p>
+                {% else %}
+                    <hr>
+                {% endif %}
+                <p>{{ form.submit() }}</p>
+            </form>
+        </div>
+    </div>
+{% endblock %}
