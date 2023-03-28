@@ -1,5 +1,7 @@
 { pkgs }: {
   deps = [
+    pkgs.run
+    pkgs.postgresql
     pkgs.vim
     pkgs.vim
     pkgs.python310Full
