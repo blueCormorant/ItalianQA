@@ -1,0 +1,125 @@
+diff --git a/app/forms.py b/app/forms.py
+index d4d52bb..f135984 100644
+--- a/app/forms.py
++++ b/app/forms.py
+@@ -1,14 +1,27 @@
+ from flask_wtf import FlaskForm
+-from wtforms import StringField, PasswordField, BooleanField, SubmitField
++from wtforms import StringField, TextAreaField, PasswordField, BooleanField, SubmitField
+ from wtforms.validators import DataRequired
++from app.qa.qa import DEFAULT_CONTEXT, DEFAULT_QUESTION
+ 
+-class QAForm(FlaskForm):    
+-    context = StringField("Context", validators=[DataRequired()])
+-    question = StringField("Question", validators=[DataRequired()])
+-    submit = SubmitField('Submit')
++class QAForm(FlaskForm):
+ 
++  context = TextAreaField(
++    "Context",
++    default=DEFAULT_CONTEXT,
++    validators=[DataRequired()]
++  )
++  question = StringField(
++    "Question",
++    default=DEFAULT_QUESTION,
++    validators=[DataRequired()]
++  )
++  submit = SubmitField('Submit')
++  
++  def __init__(self):
++    super(QAForm, self).__init__()
+ 
+-class LoginForm(FlaskForm):    
+-    username = StringField("Username", validators=[DataRequired()])
+-    password = PasswordField("Password", validators=[DataRequired()])
+-    submit = SubmitField('Submit')
++
++class LoginForm(FlaskForm):
++  username = StringField("Username", validators=[DataRequired()])
++  password = PasswordField("Password", validators=[DataRequired()])
++  submit = SubmitField('Submit')
+diff --git a/app/qa/qa.py b/app/qa/qa.py
+index be30957..51b8af3 100644
+--- a/app/qa/qa.py
++++ b/app/qa/qa.py
+@@ -1,13 +1,19 @@
+ from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+ import torch
+ 
++DEFAULT_CONTEXT = """Mentre era ospite ad Angera nella casa dell'amica Teresa Castiglioni, Volta scoprì il metano nella palude dell'isolino Partegora. Provando a smuovere il fondo con l'aiuto di un bastone vide che risalivano delle bolle di gas e le raccolse in bottiglie. Diede a questo gas il nome di "aria infiammabile di palude" e scoprì che poteva essere incendiato sia per mezzo di una candela accesa sia mediante una scarica elettrica: dedusse che il gas si formava nella decomposizione di sostanze animali e vegetali."""
++
++DEFAULT_QUESTION = """Dove ha scoperto il gas metano Volta?"""
++
+ 
+ class QuestionAnswerer(object):
+ 
+     def __init__(self):
+         self.tokenizer = self.load_tokenizer()
+         self.model = self.load_model()
+-
++        self.default_question = DEFAULT_QUESTION
++        self.default_context = DEFAULT_CONTEXT
++      
+     def load_tokenizer(self):
+         return AutoTokenizer.from_pretrained("mrm8488/bert-italian-finedtuned-squadv1-it-alfa")
+ 
+diff --git a/app/routes.py b/app/routes.py
+index f26868b..94e52a5 100644
+--- a/app/routes.py
++++ b/app/routes.py
+@@ -3,15 +3,32 @@ from app import app
+ from app.forms import QAForm, LoginForm
+ from app.qa.qa import QuestionAnswerer
+ 
+-@app.route('/')
++answerer = QuestionAnswerer()
++
++@app.route('/', methods=["GET", "POST"])
+ @app.route('/index', methods=["GET", "POST"])
+ def index():
+     form = QAForm()
++    print(form.context)
+     if form.validate_on_submit():
+-        answer = QuestionAnswerer().answer_question(form.context.data, form.question.data)
+-        return render_template("index.html", title="Home", form=form, answer=answer)
++        answer = answerer.answer_question(
++          form.context.data,
++          form.question.data
++        )
++        return render_template(
++          "index.html",
++          title="Home",
++          form=form,
++          answer=answer
++        )
+     else:
+-        return render_template("index.html", title="Home", form=form)
++        return render_template(
++          "index.html",
++          title="Home",
++          form=form,
++          default_question=answerer.default_question,
++          default_context=answerer.default_context
++        )
+ 
+ @app.route('/login', methods=["GET", "POST"])
+ def login():
+@@ -19,3 +36,4 @@ def login():
+     if form.validate_on_submit():
+         flash(f"Login requested for {form.username.data}")
+     return render_template("login.html", title="Login", form=form)
++keys = db.keys()
+diff --git a/app/templates/index.html b/app/templates/index.html
+index 17ce1e4..fc7aa2c 100644
+--- a/app/templates/index.html
++++ b/app/templates/index.html
+@@ -17,7 +17,7 @@
+                 <p>
+                     <div class="form-group">
+                         {{ form.context.label }}<br>
+-                        {{ form.context(size=32) }}<br>
++                        {{ form.context(size=32, class_="form-control", rows=5) }}<br>
+                     </div>
+                     {% for error in form.context.errors %}
+                         <span style="color: red;">[{{ error }}]</span>

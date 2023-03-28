@@ -17,7 +17,7 @@
                 <p>
                     <div class="form-group">
                         {{ form.context.label }}<br>
-                        {{ form.context(size=32) }}<br>
+                        {{ form.context(size=32, class_="form-control", rows=5) }}<br>
                     </div>
                     {% for error in form.context.errors %}
                         <span style="color: red;">[{{ error }}]</span>
