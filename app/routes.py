@@ -54,7 +54,6 @@ db = DBConn()
 @app.route('/', methods=["GET", "POST"])
 @app.route('/index', methods=["GET", "POST"])
 def index():
-    records = db.get_user_queries(1)
     form = QAForm()
     if form.validate_on_submit():
         try: # Generate answer and store record
@@ -65,6 +64,7 @@ def index():
           db.store_query(form.context.data, form.question.data, answer)
         except Exception as e:
           return render_template('error.html', error=e)
+        records = db.get_user_queries(1)
         return render_template(
           "index.html",
           title="Home",
@@ -73,6 +73,7 @@ def index():
           records=records
         )
     else:
+        records = db.get_user_queries(1)
         return render_template(
           "index.html",
           title="Home",
