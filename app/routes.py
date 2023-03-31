@@ -27,11 +27,34 @@ class DBConn(object):
     command = "insert into queries (user_id, name, lang_code, created, question, context, answer) values (1, '', 'it', now(), %s, %s, %s)"
     self.cursor.execute(command, (question, context, answer))
 
+  def get_user_queries(self, user_id, limit=5):
+    command = "select question, answer from queries where user_id = %s order by created DESC limit %s"
+    self.cursor.execute(command, (user_id, limit,))
+    return QAList(self.cursor.fetchall())
+
+class QAItem(object):
+
+  def __init__(self, question, answer):
+    self.question = question
+    self.answer = answer
+
+class QAList(object):
+
+  def __init__(self, records=None):
+    if not records is None:
+      self.items = [QAItem(record[0], record[1]) for record in records]
+    else:
+      self.items = []
+
+  def __iter__(self):
+    return self.items.__iter__()
+
 db = DBConn()
 
 @app.route('/', methods=["GET", "POST"])
 @app.route('/index', methods=["GET", "POST"])
 def index():
+    records = db.get_user_queries(1)
     form = QAForm()
     if form.validate_on_submit():
         try: # Generate answer and store record
@@ -42,14 +65,21 @@ def index():
           db.store_query(form.context.data, form.question.data, answer)
         except Exception as e:
           return render_template('error.html', error=e)
-        return render_template("index.html", title="Home", form=form, answer=answer)
+        return render_template(
+          "index.html",
+          title="Home",
+          form=form,
+          answer=answer,
+          records=records
+        )
     else:
         return render_template(
           "index.html",
           title="Home",
           form=form,
           default_question=answerer.default_question,
-          default_context=answerer.default_context
+          default_context=answerer.default_context,
+          records=records
         )
 
 @app.route('/login', methods=["GET", "POST"])

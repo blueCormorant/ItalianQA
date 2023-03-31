@@ -1,0 +1,17 @@
+.content {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.content .sidebar {
+  max-width: 100%;
+  height: auto;
+}
+
+.content .central {
+  flex-basis: 60%;
+  padding-left: 20px;
+}
+

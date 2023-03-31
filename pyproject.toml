@@ -12,6 +12,7 @@ Flask-WTF = "^1.1.1"
 sentence-transformers = "^2.2.2"
 torch = "^2.0.0"
 WTForms = "^3.0.1"
+psycopg2 = "^2.9.5"
 
 [tool.poetry.dev-dependencies]
 debugpy = "^1.6.2"
