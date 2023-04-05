@@ -1,9 +1,11 @@
 from flask import render_template, flash, redirect
+from flask import session
 from app import app
 from app.forms import QAForm, LoginForm
 from app.qa.qa import QuestionAnswerer
 import psycopg2.pool
 import os
+import bcrypt
 
 answerer = QuestionAnswerer()
 
@@ -32,6 +34,13 @@ class DBConn(object):
     self.cursor.execute(command, (user_id, limit,))
     return QAList(self.cursor.fetchall())
 
+  def password_matches(self, password, user_id):
+    command = "select hash from users where id = %s"
+    self.cursor.execute(command, (user_id,))
+    hash = self.cursor.fetchone()[0]
+    print(password.encode('utf-8') , hash.encode('utf-8'))
+    return bcrypt.checkpw(password.encode('utf-8'), hash.encode('utf-8'))
+
 class QAItem(object):
 
   def __init__(self, question, answer):
@@ -49,12 +58,18 @@ class QAList(object):
   def __iter__(self):
     return self.items.__iter__()
 
+def hash_password(password):
+  salt = bcrypt.gensalt()
+  hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
+  return hashed_password.decode('utf-8')
+  
+
+
 db = DBConn()
 
 @app.route('/', methods=["GET", "POST"])
 @app.route('/index', methods=["GET", "POST"])
 def index():
-    records = db.get_user_queries(1)
     form = QAForm()
     if form.validate_on_submit():
         try: # Generate answer and store record
@@ -65,6 +80,7 @@ def index():
           db.store_query(form.context.data, form.question.data, answer)
         except Exception as e:
           return render_template('error.html', error=e)
+        records = db.get_user_queries(1)
         return render_template(
           "index.html",
           title="Home",
@@ -73,6 +89,7 @@ def index():
           records=records
         )
     else:
+        records = db.get_user_queries(1)
         return render_template(
           "index.html",
           title="Home",
@@ -86,5 +103,10 @@ def index():
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        flash(f"Login requested for {form.username.data}")
+        print(f"Hash:{hash_password(form.password.data)}")
+        if db.password_matches(form.password.data, 1):
+            session['1'] = 1
+            return redirect("/")
+        else:
+            return render_template("login.html", form=form)
     return render_template("login.html", title="Login", form=form)
