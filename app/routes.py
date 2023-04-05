@@ -70,6 +70,8 @@ db = DBConn()
 @app.route('/', methods=["GET", "POST"])
 @app.route('/index', methods=["GET", "POST"])
 def index():
+    user_id = session.get('user_id')
+    print(f"user_id:{user_id}")
     form = QAForm()
     if form.validate_on_submit():
         try: # Generate answer and store record
@@ -103,9 +105,8 @@ def index():
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        print(f"Hash:{hash_password(form.password.data)}")
         if db.password_matches(form.password.data, 1):
-            session['1'] = 1
+            session['user_id'] = 1
             return redirect("/")
         else:
             return render_template("login.html", form=form)

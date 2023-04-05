@@ -1,22 +1,25 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <form action="" method="post" novalidate>
+  <div class="d-flex justify-content-center align-items-center">
+    <form action="" method="post" novalidate class="col-sm-6 col-md-4 col-lg-3">
         {{ form.hidden_tag() }}
-        <p>
-            {{ form.username.label }}<br>
-            {{ form.username(size=32) }}<br>
-            {% for error in form.username.errors %}
-                <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>
-            {{ form.password.label }}<br>
-            {{ form.password(size=32) }}<br>
-            {% for error in form.password.errors %}
-                <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>{{ form.submit() }}</p>
+        <h1 class="text-center mb-4">Login</h1>
+        <div class="form-floating mb-3">
+          {{ form.username(size=32, class_="form-control", id="username", placeholder="Username", autocomplete="off") }}
+          <label for="username">Username</label>
+          {% for error in form.username.errors %}
+            <span class="invalid-feedback d-block"></span>[{{ error }}]</span>
+          {% endfor %}
+        </div>
+        <div class="form-floating mb-3">
+          {{ form.password(size=32, class_="form-control", id="password", placeholder="Password", autocomplete="off") }}
+          <label for="password">Password</label>
+          {% for error in form.password.errors %}
+            <span class="invalid-feedback d-block">[{{ error }}]</span>
+          {% endfor %}
+        </div>
+        {{ form.submit(class_="btn btn-dark w-100", value="Log in") }}
     </form>
+  </div>
 {% endblock %}
