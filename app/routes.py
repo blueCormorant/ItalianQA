@@ -26,8 +26,8 @@ class DBConn(object):
     self.conn.close()
   
   def store_query(self, context, question, answer):
-    command = "insert into queries (user_id, name, lang_code, created, question, context, answer) values (1, '', 'it', now(), %s, %s, %s)"
-    self.cursor.execute(command, (question, context, answer))
+    command = "insert into queries (user_id, name, lang_code, created, question, context, answer) values (%s, '', 'it', now(), %s, %s, %s)"
+    self.cursor.execute(command, (session.get('user_id'), question, context, answer))
 
   def get_user_queries(self, user_id, limit=5):
     command = "select question, answer from queries where user_id = %s order by created DESC limit %s"
@@ -83,7 +83,6 @@ db = DBConn()
 @app.route('/', methods=["GET", "POST"])
 @app.route('/index', methods=["GET", "POST"])
 def index():
-    print(session.get('user_id'))
     form = QAForm()
     if form.validate_on_submit():
         try: # Generate answer and store record
