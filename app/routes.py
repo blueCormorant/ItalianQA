@@ -48,6 +48,14 @@ class DBConn(object):
     command = "insert into users (name, email, hash) values (%s, %s, %s)"
     self.cursor.execute(command, ("", username, hash))
 
+  def get_user_id(self, username):
+    command = "select id from users where email = %s"
+    self.cursor.execute(command, (username,))
+    fetch = self.cursor.fetchone()
+    if fetch is None:
+      raise Exception("Username not found")
+    return fetch[0]
+
 class QAItem(object):
 
   def __init__(self, question, answer):
@@ -70,15 +78,12 @@ def hash_password(password):
   hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
   return hashed_password.decode('utf-8')
 
-
-
 db = DBConn()
 
 @app.route('/', methods=["GET", "POST"])
 @app.route('/index', methods=["GET", "POST"])
 def index():
-    user_id = session.get('user_id')
-    print(f"user_id:{user_id}")
+    print(session.get('user_id'))
     form = QAForm()
     if form.validate_on_submit():
         try: # Generate answer and store record
@@ -89,7 +94,7 @@ def index():
           db.store_query(form.context.data, form.question.data, answer)
         except Exception as e:
           return render_template('error.html', error=e)
-        records = db.get_user_queries(1)
+        records = db.get_user_queries(session.get('user_id'))
         return render_template(
           "index.html",
           title="Home",
@@ -98,7 +103,7 @@ def index():
           records=records
         )
     else:
-        records = db.get_user_queries(1)
+        records = db.get_user_queries(session.get('user_id'))
         return render_template(
           "index.html",
           title="Home",
@@ -119,6 +124,8 @@ def login_post():
   if form.validate_on_submit():
     try:
       if db.password_matches(form.password.data, form.username.data):
+        session['user_id'] = db.get_user_id(form.username.data)
+        session['logged_in'] = True        
         return redirect("/")
       else:
         flash("Invalid password, please try again.")
@@ -126,6 +133,7 @@ def login_post():
     except Exception as e:
        flash("An error occurred while processing your request: " + str(e))
        return render_template("login.html", title="Login", form=form)
+  get_flashed_messages()
   return render_template('error.html', error="Invalid form submission")
 
 @app.route('/signup', methods=["GET", "POST"])
