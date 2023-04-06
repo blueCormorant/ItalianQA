@@ -1,7 +1,7 @@
 from flask import render_template, flash, redirect
 from flask import session
 from app import app
-from app.forms import QAForm, LoginForm
+from app.forms import QAForm, LoginForm, SignupForm
 from app.qa.qa import QuestionAnswerer
 import psycopg2.pool
 import os
@@ -41,6 +41,11 @@ class DBConn(object):
     print(password.encode('utf-8') , hash.encode('utf-8'))
     return bcrypt.checkpw(password.encode('utf-8'), hash.encode('utf-8'))
 
+  def add_user(self, username, password):
+    hash = hash_password(password)
+    command = "insert into users (name, email, hash) values (%s, %s, %s)"
+    self.cursor.execute(command, ("", username, hash))
+
 class QAItem(object):
 
   def __init__(self, question, answer):
@@ -62,7 +67,7 @@ def hash_password(password):
   salt = bcrypt.gensalt()
   hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
   return hashed_password.decode('utf-8')
-  
+
 
 
 db = DBConn()
@@ -111,3 +116,16 @@ def login():
         else:
             return render_template("login.html", form=form)
     return render_template("login.html", title="Login", form=form)
+
+@app.route('/signup', methods=["GET", "POST"])
+def signup():
+  form = SignupForm()
+  if form.validate_on_submit():
+    try:
+      print("validate_on_submit")
+      db.add_user(form.username.data, form.password.data)
+    except Exception as e:
+      print(e)
+    return render_template("login.html", title="Login", form=LoginForm())
+  else:
+    return render_template("signup.html", title="Signup", form=form)
