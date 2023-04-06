@@ -1,5 +1,5 @@
 from flask import render_template, flash, redirect
-from flask import session, url_for
+from flask import session, url_for, get_flashed_messages
 from app import app
 from app.forms import QAForm, LoginForm, SignupForm
 from app.qa.qa import QuestionAnswerer
@@ -129,15 +129,22 @@ def login_post():
         return redirect("/")
       else:
         flash("Invalid password, please try again.")
-        return render_template("login.html", title="Login", form=form)
+        return render_template("login.html", title="Login", form=form, session=session)
     except Exception as e:
        flash("An error occurred while processing your request: " + str(e))
-       return render_template("login.html", title="Login", form=form)
+       return render_template("login.html", title="Login", form=form, session=session)
   get_flashed_messages()
   return render_template('error.html', error="Invalid form submission")
 
-@app.route('/signup', methods=["GET", "POST"])
-def signup():
+@app.route('/signup', methods=['GET'])
+def signup_get():
+    print("signup_get")
+    form = SignupForm()
+    return render_template('signup.html', title='Signup', form=form)
+
+@app.route('/signup', methods=['POST'])
+def signup_post():
+    print("signup_post")
     form = SignupForm()
     if form.validate_on_submit():
         try:
@@ -147,8 +154,8 @@ def signup():
         return redirect(url_for('login_get'))
     else:
         for field, errors in form.errors.items():
-          for error in errors:
-            flash("%s: %s" % (getattr(form, field).label.text, error), "error")
+            for error in errors:
+                flash("%s: %s" % (getattr(form, field).label.text, error), "error")
         return render_template("signup.html", title="Signup", form=form)
 
 @app.route("/logout")
