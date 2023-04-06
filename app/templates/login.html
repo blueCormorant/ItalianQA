@@ -5,6 +5,9 @@
     <form action="" method="post" novalidate class="col-sm-6 col-md-4 col-lg-3">
         {{ form.hidden_tag() }}
         <h1 class="text-center mb-4">Login</h1>
+        {% for message in get_flashed_messages() %}
+          <div class="alert alert-danger">{{ message }}</div>
+        {% endfor %}
         <div class="form-floating mb-3">
           {{ form.username(size=32, class_="form-control", id="username", placeholder="Username", autocomplete="off") }}
           <label for="username">Username</label>
@@ -23,7 +26,7 @@
     </form>
   </div>
 <div class="text-center mt-4">
-  <form action="/signup">
+  <form action="{{ url_for('signup') }}">
     <button type="submit" class="btn btn-link">Sign up</button>
   </form>
 </div>

@@ -1,5 +1,5 @@
 from flask import render_template, flash, redirect
-from flask import session
+from flask import session, url_for
 from app import app
 from app.forms import QAForm, LoginForm, SignupForm
 from app.qa.qa import QuestionAnswerer
@@ -34,11 +34,13 @@ class DBConn(object):
     self.cursor.execute(command, (user_id, limit,))
     return QAList(self.cursor.fetchall())
 
-  def password_matches(self, password, user_id):
-    command = "select hash from users where id = %s"
-    self.cursor.execute(command, (user_id,))
-    hash = self.cursor.fetchone()[0]
-    print(password.encode('utf-8') , hash.encode('utf-8'))
+  def password_matches(self, password, username):
+    command = "select hash from users where email = %s"
+    self.cursor.execute(command, (username,))
+    fetch = self.cursor.fetchone()
+    if fetch is None:
+      raise Exception("Username not found")
+    hash = fetch[0]
     return bcrypt.checkpw(password.encode('utf-8'), hash.encode('utf-8'))
 
   def add_user(self, username, password):
@@ -106,26 +108,37 @@ def index():
           records=records
         )
 
-@app.route('/login', methods=["GET", "POST"])
-def login():
+@app.route('/login', methods=["GET"])
+def login_get():
     form = LoginForm()
-    if form.validate_on_submit():
-        if db.password_matches(form.password.data, 1):
-            session['user_id'] = 1
-            return redirect("/")
-        else:
-            return render_template("login.html", form=form)
     return render_template("login.html", title="Login", form=form)
+
+@app.route('/login', methods=["POST"])
+def login_post():
+  form = LoginForm()
+  if form.validate_on_submit():
+    try:
+      if db.password_matches(form.password.data, form.username.data):
+        return redirect("/")
+      else:
+        flash("Invalid password, please try again.")
+        return render_template("login.html", title="Login", form=form)
+    except Exception as e:
+       flash("An error occurred while processing your request: " + str(e))
+       return render_template("login.html", title="Login", form=form)
+  return render_template('error.html', error="Invalid form submission")
 
 @app.route('/signup', methods=["GET", "POST"])
 def signup():
-  form = SignupForm()
-  if form.validate_on_submit():
-    try:
-      print("validate_on_submit")
-      db.add_user(form.username.data, form.password.data)
-    except Exception as e:
-      print(e)
-    return render_template("login.html", title="Login", form=LoginForm())
-  else:
-    return render_template("signup.html", title="Signup", form=form)
+    form = SignupForm()
+    if form.validate_on_submit():
+        try:
+            db.add_user(form.username.data, form.password.data)
+        except Exception as e:
+            return render_template('error.html', error=e)
+        return redirect(url_for('login_get'))
+    else:
+        for field, errors in form.errors.items():
+          for error in errors:
+            flash("%s: %s" % (getattr(form, field).label.text, error), "error")
+        return render_template("signup.html", title="Signup", form=form)
