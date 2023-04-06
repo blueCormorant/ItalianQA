@@ -124,7 +124,8 @@ def login_post():
     try:
       if db.password_matches(form.password.data, form.username.data):
         session['user_id'] = db.get_user_id(form.username.data)
-        session['logged_in'] = True        
+        session['username'] = form.username.data
+        session['logged_in'] = True
         return redirect("/")
       else:
         flash("Invalid password, please try again.")
@@ -149,3 +150,12 @@ def signup():
           for error in errors:
             flash("%s: %s" % (getattr(form, field).label.text, error), "error")
         return render_template("signup.html", title="Signup", form=form)
+
+@app.route("/logout")
+def logout():
+    session.pop("username", None)
+    session.pop("user_id", None)    
+    session.pop("logged_in", None)
+    flash("You have been logged out")
+    return redirect(url_for("login_get"))
+
